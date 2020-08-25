@@ -1,10 +1,9 @@
 from django.db import models
+from .managers import VotableManager
+# from django.utils.translation import gettext as _
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from vote.managers import VotableManager
-
-UP = 0
-DOWN = 1
+from math import sqrt
 
 
 class VoteManager(models.Manager):
@@ -22,10 +21,10 @@ class VoteManager(models.Manager):
 
 
 class Vote(models.Model):
-    ACTION_FIELD = {
-        UP: 'num_vote_up',
-        DOWN: 'num_vote_down'
-    }
+    UP = 'UP'
+    DOWN = 'DOWN'
+    # ACTION_FIELD = [(UP, _('Up')), (DOWN, _('Down'))]
+    ACTION_FIELD = {UP: 'num_vote_up', DOWN: 'num_vote_down'}
 
     user_id = models.BigIntegerField()
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -43,10 +42,7 @@ class Vote(models.Model):
     @classmethod
     def votes_for(cls, model, instance=None, action=UP):
         ct = ContentType.objects.get_for_model(model)
-        kwargs = {
-            "content_type": ct,
-            "action": action
-        }
+        kwargs = {"content_type": ct, "action": action}
         if instance is not None:
             kwargs["object_id"] = instance.pk
 
@@ -68,7 +64,19 @@ class VoteModel(models.Model):
 
     @property
     def calculate_vote_score(self):
-        return self.num_vote_up - self.num_vote_down
+        votes = self.num_vote_down + self.num_vote_up
+        if votes == 0:
+            return 0
+
+        #confidence level
+        z = 1.44  #1.44 = 85%, 1.96 = 95%
+        p = float(self.num_vote_up) / votes
+
+        left = p + 1 / (2 * votes) * z * z
+        right = z * sqrt(p * (1 - p) / votes + z * z / (4 * votes * votes))
+        under = 1 + 1 / votes * z * z
+
+        return (left - right) / under
 
     @property
     def is_voted_up(self):
