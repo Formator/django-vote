@@ -1,9 +1,13 @@
-from django.db import models
-from .managers import VotableManager
-# from django.utils.translation import gettext as _
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
 from math import sqrt
+
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.db import models
+
+from vote.managers import VotableManager
+
+UP = 0
+DOWN = 1
 
 
 class VoteManager(models.Manager):
@@ -21,9 +25,6 @@ class VoteManager(models.Manager):
 
 
 class Vote(models.Model):
-    UP = 'UP'
-    DOWN = 'DOWN'
-    # ACTION_FIELD = [(UP, _('Up')), (DOWN, _('Down'))]
     ACTION_FIELD = {UP: 'num_vote_up', DOWN: 'num_vote_down'}
 
     user_id = models.BigIntegerField()
