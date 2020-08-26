@@ -17,7 +17,7 @@ class CreateChangeDeleteVoteAPIView(mixins.CreateModelMixin,
         user_id = request.user.pk
 
         action_type = request.data.get('action', 'up')
-        voted = getattr(obj.votes, action_type)(user_id)
+        voted, instance = getattr(obj.votes, action_type)(user_id)
         if voted:
             post_voted.send(
                 sender=self.queryset.model,
@@ -27,8 +27,7 @@ class CreateChangeDeleteVoteAPIView(mixins.CreateModelMixin,
         else:
             return Response(data={}, status=409)
 
-        serializer = self.get_serializer(
-            instance=getattr(obj.votes, 'instance'))
+        serializer = self.get_serializer(instance=instance)
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers)

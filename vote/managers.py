@@ -1,24 +1,27 @@
-from django.db import models, transaction, IntegrityError
-from django.db.models.query import QuerySet
-from django.db.utils import OperationalError
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
+from django.db import IntegrityError, models, transaction
+from django.db.models.query import QuerySet
+from django.db.utils import OperationalError
 from django.utils.translation import ugettext_lazy as _
 
-from vote.utils import instance_required, add_field_to_objects
+from vote.utils import add_field_to_objects, instance_required
 
 UP = 0
 DOWN = 1
 
 
 class VotedQuerySet(QuerySet):
-
     """
     if call votes.annotate with an `user` argument then add `is_voted` to each
     instance.
     """
 
-    def __init__(self, model=None, query=None, using=None, user_id=None,
+    def __init__(self,
+                 model=None,
+                 query=None,
+                 using=None,
+                 user_id=None,
                  hints=None):
 
         self.user_id = user_id
@@ -60,9 +63,10 @@ class _VotableManager(models.Manager):
 
                 content_type = ContentType.objects.get_for_model(self.model)
                 try:
-                    vote = self.through.objects.get(user_id=user_id,
-                                                    content_type=content_type,
-                                                    object_id=self.instance.pk)
+                    vote = self.through.objects.get(
+                        user_id=user_id,
+                        content_type=content_type,
+                        object_id=self.instance.pk)
                     if vote.action == action:
                         return False
                     vote.action = action
@@ -70,15 +74,15 @@ class _VotableManager(models.Manager):
 
                     # will delete your up if you vote down some instance that
                     # you have vote up
-                    voted_field = self.through.ACTION_FIELD.get(
-                        int(not action))
+                    voted_field = self.through.ACTION_FIELD.get(int(not action))
                     setattr(self.instance, voted_field,
                             getattr(self.instance, voted_field) - 1)
                 except self.through.DoesNotExist:
-                    self.through.objects.create(user_id=user_id,
-                                                content_type=content_type,
-                                                object_id=self.instance.pk,
-                                                action=action)
+                    self.through.objects.create(
+                        user_id=user_id,
+                        content_type=content_type,
+                        object_id=self.instance.pk,
+                        action=action)
 
                 statistics_field = self.through.ACTION_FIELD.get(action)
                 setattr(self.instance, statistics_field,
@@ -86,9 +90,9 @@ class _VotableManager(models.Manager):
 
                 self.instance.save()
 
-            return True
+            return True, self.instance
         except (OperationalError, IntegrityError):
-            return False
+            return False, self.instance
 
     @instance_required
     def up(self, user_id):
@@ -109,8 +113,7 @@ class _VotableManager(models.Manager):
                     vote = self.through.objects.select_for_update().get(
                         user_id=user_id,
                         content_type_id=content_type.id,
-                        object_id=self.instance.id
-                    )
+                        object_id=self.instance.id)
                 except self.through.DoesNotExist:
                     return False
 
@@ -124,10 +127,10 @@ class _VotableManager(models.Manager):
 
                 vote.delete()
 
-            return True
+            return True, self.instance
         except (OperationalError, IntegrityError):
             # concurrent request may decrease num_vote field to negative
-            return False
+            return False, self.instance
 
     @instance_required
     def get(self, user_id):
@@ -139,32 +142,28 @@ class _VotableManager(models.Manager):
     @instance_required
     def exists(self, user_id, action=UP):
         return self.through.objects.filter(
-            user_id=user_id,
-            content_object=self.instance,
-            action=action
-        ).exists()
+            user_id=user_id, content_object=self.instance,
+            action=action).exists()
 
     def all(self, user_id, action=UP):
         content_type = ContentType.objects.get_for_model(self.model)
 
         object_ids = self.through.objects.filter(
-            user_id=user_id,
-            content_type=content_type,
-            action=action).values_list('object_id', flat=True)
+            user_id=user_id, content_type=content_type,
+            action=action).values_list(
+                'object_id', flat=True)
 
         return self.model.objects.filter(pk__in=list(object_ids))
 
     def count(self, action=UP):
-        return self.through.votes_for(self.model,
-                                      self.instance, action).count()
+        return self.through.votes_for(self.model, self.instance, action).count()
 
     def user_ids(self, action=UP):
         return self.through.votes_for(
-            self.model, self.instance, action
-        ).order_by('-create_at').values_list('user_id', 'create_at')
+            self.model, self.instance,
+            action).order_by('-create_at').values_list('user_id', 'create_at')
 
-    def annotate(self, queryset=None, user_id=None,
-                 reverse=True, sort=True):
+    def annotate(self, queryset=None, user_id=None, reverse=True, sort=True):
 
         if queryset is not None:
             queryset = queryset
@@ -175,8 +174,8 @@ class _VotableManager(models.Manager):
             order = reverse and '-%s' % 'vote_score' or 'vote_score'
             queryset = queryset.order_by(order, '-id')
 
-        return VotedQuerySet(model=queryset.model, query=queryset.query,
-                             user_id=user_id)
+        return VotedQuerySet(
+            model=queryset.model, query=queryset.query, user_id=user_id)
 
     def vote_by(self, user_id, queryset=None, ids=None):
         if queryset is None and ids is None:
@@ -188,8 +187,8 @@ class _VotableManager(models.Manager):
 
             return add_field_to_objects(self.model, objects, user_id)
         else:
-            return VotedQuerySet(model=queryset.model, query=queryset.query,
-                                 user_id=user_id)
+            return VotedQuerySet(
+                model=queryset.model, query=queryset.query, user_id=user_id)
 
 
 class VotableManager(GenericRelation):
@@ -203,9 +202,9 @@ class VotableManager(GenericRelation):
 
     def __get__(self, instance, model):
         if instance is not None and instance.pk is None:
-            raise ValueError(
-                "%s objects need to have a primary key value "
-                "before you can access their votes." % model.__name__)
+            raise ValueError("%s objects need to have a primary key value "
+                             "before you can access their votes." %
+                             model.__name__)
 
         manager = self.manager(
             through=self.through,
