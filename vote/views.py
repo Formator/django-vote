@@ -12,11 +12,8 @@ class CreateChangeDeleteVoteAPIView(mixins.CreateModelMixin,
     Concrete view for creating, changing and deleting Vote of an user for a model instance.
     """
 
-    def get_instance(self, pk):
-        return self.queryset.get(pk=pk)
-
     def post(self, request, *args, **kwargs):
-        obj = self.get_instance(request.data['id'])
+        obj = self.get_object()
         user_id = request.user.pk
 
         action_type = request.data.get('action', 'up')
@@ -39,7 +36,7 @@ class CreateChangeDeleteVoteAPIView(mixins.CreateModelMixin,
         # return self.create(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        obj = self.get_instance(request.data['pk'])
+        obj = self.get_object()
         user_id = request.user.pk
 
         deleted = obj.votes.delete(user_id)
