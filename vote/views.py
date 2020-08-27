@@ -24,8 +24,6 @@ class CreateChangeDeleteVoteAPIView(mixins.CreateModelMixin,
                 obj=obj,
                 user_id=user_id,
                 action=action_type)
-        else:
-            return Response(data={}, status=409)
 
         serializer = self.get_serializer(instance=instance)
         headers = self.get_success_headers(serializer.data)
