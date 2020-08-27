@@ -52,11 +52,7 @@ class Vote(models.Model):
 
 class VoteModel(models.Model):
     vote_score = models.DecimalField(
-        default=0,
-        decimal_places=8,
-        max_digits=16,
-        db_index=True
-    )
+        default=0, decimal_places=8, max_digits=16, db_index=True)
     num_vote_up = models.PositiveIntegerField(default=0, db_index=True)
     num_vote_down = models.PositiveIntegerField(default=0, db_index=True)
     votes = VotableManager()
