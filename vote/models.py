@@ -31,7 +31,7 @@ class Vote(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
-    action = models.PositiveSmallIntegerField(default=UP)
+    action = models.PositiveSmallIntegerField(default=0)
     create_at = models.DateTimeField(auto_now_add=True)
 
     objects = VoteManager()
