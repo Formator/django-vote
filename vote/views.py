@@ -59,7 +59,7 @@ class VoteMixin:
         user_id = request.user.pk
         if request.method.lower() == 'post':
             action_type = request.data.get('action', 'up')
-            voted = getattr(obj.votes, action_type)(user_id)
+            voted, instance = getattr(obj.votes, action_type)(user_id)
             if voted:
                 post_voted.send(
                     sender=self.queryset.model,
