@@ -68,7 +68,7 @@ class _VotableManager(models.Manager):
                         content_type=content_type,
                         object_id=self.instance.pk)
                     if vote.action == action:
-                        return False
+                        return False, self.instance
                     vote.action = action
                     vote.save()
 
