@@ -7,8 +7,11 @@ from django.utils.translation import ugettext_lazy as _
 
 from vote.utils import add_field_to_objects, instance_required
 
+from .signals import post_voted
+
 UP = 0
 DOWN = 1
+DELETE = -1
 
 
 class VotedQuerySet(QuerySet):
@@ -90,6 +93,11 @@ class _VotableManager(models.Manager):
 
                 self.instance.save()
 
+            post_voted.send(
+                sender=self.model,
+                instance=self.instance,
+                user_id=user_id,
+                action=action)
             return True, self.instance
         except (OperationalError, IntegrityError):
             return False, self.instance
@@ -126,7 +134,11 @@ class _VotableManager(models.Manager):
                 self.instance.save()
 
                 vote.delete()
-
+                post_voted.send(
+                    sender=self.model,
+                    instance=self.instance,
+                    user_id=user_id,
+                    action=DELETE)
             return True, self.instance
         except (OperationalError, IntegrityError):
             # concurrent request may decrease num_vote field to negative

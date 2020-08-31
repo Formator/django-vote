@@ -1,3 +1,4 @@
+from decimal import Decimal
 from math import sqrt
 
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -8,6 +9,7 @@ from vote.managers import VotableManager
 
 UP = 0
 DOWN = 1
+DELETE = -1
 
 
 class VoteManager(models.Manager):
@@ -78,7 +80,8 @@ class VoteModel(models.Model):
         right = z * sqrt(p * (1 - p) / votes + z * z / (4 * votes * votes))
         under = 1 + 1 / votes * z * z
 
-        return (left - right) / under
+        result = (left - right) / under
+        return round(Decimal.from_float(result), 8)
 
     @property
     def is_voted_up(self):
