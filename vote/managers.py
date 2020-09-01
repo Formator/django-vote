@@ -11,7 +11,6 @@ from .signals import post_voted
 
 UP = 0
 DOWN = 1
-DELETE = -1
 
 
 class VotedQuerySet(QuerySet):
@@ -95,9 +94,9 @@ class _VotableManager(models.Manager):
 
             post_voted.send(
                 sender=self.model,
-                instance=self.instance,
                 user_id=user_id,
-                action=action)
+                action=action,
+                instance=self.instance)
             return True, self.instance
         except (OperationalError, IntegrityError):
             return False, self.instance
@@ -136,9 +135,9 @@ class _VotableManager(models.Manager):
                 vote.delete()
                 post_voted.send(
                     sender=self.model,
-                    instance=self.instance,
                     user_id=user_id,
-                    action=DELETE)
+                    action='delete',
+                    instance=self.instance)
             return True, self.instance
         except (OperationalError, IntegrityError):
             # concurrent request may decrease num_vote field to negative
