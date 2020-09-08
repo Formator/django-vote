@@ -2,7 +2,7 @@ from rest_framework import generics, mixins, status
 from rest_framework.decorators import action
 from rest_framework.views import Response
 
-from vote.signals import post_voted
+#from vote.signals import post_voted
 
 
 class CreateChangeDeleteVoteAPIView(mixins.CreateModelMixin,
@@ -18,12 +18,13 @@ class CreateChangeDeleteVoteAPIView(mixins.CreateModelMixin,
 
         action_type = request.data.get('action', 'up')
         voted, instance = getattr(obj.votes, action_type)(user_id)
-        if voted:
-            post_voted.send(
-                sender=self.queryset.model,
-                obj=obj,
-                user_id=user_id,
-                action=action_type)
+        # if voted:
+        #     post_voted.send(
+        #         sender=self.queryset.model,
+        #         obj=obj,
+        #         user_id=user_id,
+        #         action=action_type,
+        #         instance=instance)
 
         serializer = self.get_serializer(instance=instance)
         headers = self.get_success_headers(serializer.data)
@@ -62,20 +63,20 @@ class VoteMixin:
         if request.method.lower() == 'post':
             action_type = request.data.get('action', 'up')
             voted, instance = getattr(obj.votes, action_type)(user_id)
-            if voted:
-                post_voted.send(
-                    sender=self.queryset.model,
-                    obj=obj,
-                    user_id=user_id,
-                    action=action_type)
-            else:
+            if not voted:
+                #     post_voted.send(
+                #         sender=self.queryset.model,
+                #         obj=obj,
+                #         user_id=user_id,
+                #         action=action_type)
+                # else:
                 return Response(data={}, status=409)
         else:
             deleted = obj.votes.delete(user_id)
-            if deleted:
-                post_voted.send(
-                    sender=self.queryset.model,
-                    obj=obj,
-                    user_id=user_id,
-                    action='delete')
+            # if deleted:
+            #     post_voted.send(
+            #         sender=self.queryset.model,
+            #         obj=obj,
+            #         user_id=user_id,
+            #         action='delete')
         return Response({})
