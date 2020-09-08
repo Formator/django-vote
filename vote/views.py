@@ -35,14 +35,18 @@ class CreateChangeDeleteVoteAPIView(mixins.CreateModelMixin,
         obj = self.get_object()
         user_id = request.user.pk
 
-        deleted = obj.votes.delete(user_id)
+        deleted, instance = obj.votes.delete(user_id)
         if deleted:
             post_voted.send(
                 sender=self.queryset.model,
                 obj=obj,
                 user_id=user_id,
                 action='delete')
-        return Response(status=status.HTTP_204_NO_CONTENT)
+
+        serializer = self.get_serializer(instance=instance)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_200_OK, headers=headers)
         # return self.destroy(request, *args, **kwargs)
 
 
