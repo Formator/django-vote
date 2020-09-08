@@ -17,6 +17,7 @@ class CreateChangeDeleteVoteAPIView(mixins.CreateModelMixin,
         user_id = request.user.pk
 
         action_type = request.data.get('action', 'up')
+        action_type = action_type.lower()
         voted, instance = getattr(obj.votes, action_type)(user_id)
         # if voted:
         #     post_voted.send(
@@ -62,6 +63,7 @@ class VoteMixin:
         user_id = request.user.pk
         if request.method.lower() == 'post':
             action_type = request.data.get('action', 'up')
+            action_type = action_type.lower()
             voted, instance = getattr(obj.votes, action_type)(user_id)
             if not voted:
                 #     post_voted.send(
